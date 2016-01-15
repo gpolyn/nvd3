@@ -134,6 +134,48 @@ nv.models.axis = function() {
                     } else {
                         w = scale.range()[scale.range().length-1]+(scale.range()[1]-scale.range()[0]);
                     }
+
+                    // ADD ARBITRARY ADDITIONAL TICK ROWS
+
+                    //  evenly spaced
+                    var someTickValuesForEvenSpacing = [1,2,3,4,5,6,7];
+                    var someTickValuesForArbitrarySpacingPositions = [];
+
+                    // Q1: How to dynamically find the value guessed at here?
+                    var question1 = 8; 
+
+                    // generate spacing
+                    for (var j = 1; j < scale0.range().length; j++){
+                      someTickValuesForArbitrarySpacingPositions.push(( scale0.range()[j] - scale0.range()[j-1])/2 + scale0.range()[j-1] + question1) // Q1
+                    }
+
+                    //  whatever spacing
+                    var someTickValuesForArbitrarySpacing = ["blah", "meh"];
+                    var someTickValuesForArbitrarySpacingPositions = [30, 158];
+
+
+										var evenSpacing = d3.scale.ordinal()
+																							.domain(someTickValuesForEvenSpacing)
+																							.range(scale.range());
+
+										var moreEvenSpacing = d3.svg.axis()
+																			 .scale(evenSpacing);
+
+										var someAxisGroup = g.append("g").call(moreEvenSpacing);
+
+                    // Q2: how to dyanmically determine distance for additional tick rows?
+                    var someGuessAtSuitableDistance = 6;
+                    var someGuessAtSuitableDistance2 = 16;
+
+										someAxisGroup.attr("transform","translate(0," + someGuessAtSuitableDistance + ")");
+
+										var unevenSpacing = d3.scale.ordinal()
+																							.domain(someTickValuesForArbitrarySpacing)
+																							.range(someTickValuesForArbitrarySpacingPositions);
+										var moreUnevenSpacing = d3.svg.axis().scale(unevenSpacing);
+										var anotherAxisGroup = g.append("g").call(moreUnevenSpacing);
+										anotherAxisGroup.attr("transform","translate(0," + someGuessAtSuitableDistance2 + ")")
+
                     axisLabel
                         .attr('text-anchor', 'middle')
                         .attr('y', xLabelMargin)
