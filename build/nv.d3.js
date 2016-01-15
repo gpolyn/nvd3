@@ -1585,40 +1585,45 @@ nv.utils.initSVG = function(svg) {
                     }
 
                     // ADD ARBITRARY ADDITIONAL TICK ROWS
-                    if (data[0].additionalTickRows && data[0].additionalTickRows.length > 0){
 
-                      var additionalTickRows = data[0].additionalTickRows.slice()
-                      additionalTickRows.unshift({range: scale0.range()});
+                    //  evenly spaced
+                    var someTickValuesForEvenSpacing = [1,2,3,4,5,6,7];
+                    var someTickValuesForArbitrarySpacingPositions = [];
 
-                      var question1 = 26; // Q1: What basis for margin for first additional row?
-                      var question2 = 9; // Q2: What basis for distance for additional rows from axis?
+                    // Q1: How to dynamically find the value guessed at here?
+                    var question1 = 8; 
 
-                      for ( var k = 1; k < additionalTickRows.length; k++ ){
-
-                        var previousTickRowRange = additionalTickRows[k-1].range;
-
-                        additionalTickRows[k]["range"] = [];
-
-                        additionalTickRows[k].valuePositionsRelativeToPreviousRow.forEach(function(ele){
-                          if (ele.length == 1){
-                            additionalTickRows[k]["range"].push( previousTickRowRange[ele[0]] + question1 ); // Q1: What basis for margin for first additional row?
-                          } else { // length == 2
-                            additionalTickRows[k]["range"].push( ( previousTickRowRange[ele[1]] - previousTickRowRange[ele[0]] )/2  + previousTickRowRange[ele[0]] );
-                          }
-                        })
-
-                        var a = d3.scale.ordinal().domain(additionalTickRows[k].domain)
-                                                  .range(additionalTickRows[k].range);
-
-                        var b = d3.svg.axis().scale(a);
-
-                        var c = g.append("g").call(b);
-
-                        c.attr("transform","translate(0," + (k * question2) + ")"); // QUESTION2: Dynamic basis for distance?
-
-                      }
-                    
+                    // generate spacing
+                    for (var j = 1; j < scale0.range().length; j++){
+                      someTickValuesForArbitrarySpacingPositions.push(( scale0.range()[j] - scale0.range()[j-1])/2 + scale0.range()[j-1] + question1) // Q1
                     }
+
+                    //  whatever spacing
+                    var someTickValuesForArbitrarySpacing = ["blah", "meh"];
+                    var someTickValuesForArbitrarySpacingPositions = [30, 158];
+
+
+										var evenSpacing = d3.scale.ordinal()
+																							.domain(someTickValuesForEvenSpacing)
+																							.range(scale.range());
+
+										var moreEvenSpacing = d3.svg.axis()
+																			 .scale(evenSpacing);
+
+										var someAxisGroup = g.append("g").call(moreEvenSpacing);
+
+                    // Q2: how to dyanmically determine distance for additional tick rows?
+                    var someGuessAtSuitableDistance = 6;
+                    var someGuessAtSuitableDistance2 = 16;
+
+										someAxisGroup.attr("transform","translate(0," + someGuessAtSuitableDistance + ")");
+
+										var unevenSpacing = d3.scale.ordinal()
+																							.domain(someTickValuesForArbitrarySpacing)
+																							.range(someTickValuesForArbitrarySpacingPositions);
+										var moreUnevenSpacing = d3.svg.axis().scale(unevenSpacing);
+										var anotherAxisGroup = g.append("g").call(moreUnevenSpacing);
+										anotherAxisGroup.attr("transform","translate(0," + someGuessAtSuitableDistance2 + ")")
 
                     axisLabel
                         .attr('text-anchor', 'middle')
