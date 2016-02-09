@@ -14,9 +14,58 @@ nv.models.discreteBar = function() {
         , y = d3.scale.linear()
         , getX = function(d) { return d.x }
         , getY = function(d) { return d.y }
+        , obtainMinimaeAndMaximae = function(data) {
+            
+            var lastMin, lastMax;
+            var minimae = {}, maximae = {};
+            var previous, current;
+
+            if ( data.length > 0){ // ensure first max is captured
+              lastMax = {value: data[0], index: 0};
+              lastMin = {value: data[0], index: 0};
+            }
+
+            for (var i = 1; i < data.length; i++) {
+
+              previous = data[i-1]
+              current = data[i]
+              if (current > previous){
+                lastMax = {value: current, index: i}
+              } else if (lastMax != undefined){
+                maximae[lastMax["index"]] = lastMax["value"]; // save
+                lastMax = undefined; // reset
+              }
+
+              if (current < previous){
+                lastMin = {value: current, index: i}
+              } else if (lastMin != undefined){
+                minimae[lastMin["index"]] = lastMin["value"]; // save
+                lastMin = undefined; // reset
+              }
+            }
+
+            if (lastMin != undefined){
+                minimae[lastMin["index"]] = lastMin["value"]; // save
+            }
+
+            if (lastMax != undefined){
+                maximae[lastMax["index"]] = lastMax["value"]; // save
+            }
+
+            var whichToShow = data.map(function(val, i){
+              if (maximae.hasOwnProperty(i) || minimae.hasOwnProperty(i)) {
+                return true;
+              } else {
+                return false; 
+              }
+            })
+            
+            return whichToShow;
+        }
         , forceY = [0] // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
         , color = nv.utils.defaultColor()
         , showValues = false
+        , showLocalMaxMinValuesOnly = false
         , valueFormat = d3.format(',.2f')
         , xDomain
         , yDomain
@@ -30,12 +79,14 @@ nv.models.discreteBar = function() {
     //============================================================
     // Private Variables
     //------------------------------------------------------------
-
     var x0, y0;
     var renderWatch = nv.utils.renderWatch(dispatch, duration);
 
     function chart(selection) {
         renderWatch.reset();
+
+        if (showLocalMaxMinValuesOnly) showValues = true;
+
         selection.each(function(data) {
             var availableWidth = width - margin.left - margin.right,
                 availableHeight = height - margin.top - margin.bottom,
@@ -57,7 +108,6 @@ nv.models.discreteBar = function() {
                         return { x: getX(d,i), y: getY(d,i), y0: d.y0 }
                     })
                 });
-
             x   .domain(xDomain || d3.merge(seriesData).map(function(d) { return d.x }))
                 .rangeBands(xRange || [0, availableWidth], .1);
             y   .domain(yDomain || d3.extent(d3.merge(seriesData).map(function(d) { return d.y }).concat(forceY)));
@@ -159,12 +209,25 @@ nv.models.discreteBar = function() {
                 .attr('width', x.rangeBand() * .9 / data.length )
 
             if (showValues) {
+
                 barsEnter.append('text')
                     .attr('text-anchor', 'middle')
                 ;
 
+                var whichToShow = Array.apply(null, Array(data[0].values.length)).map(function(){return true;}); 
+
+                if (showLocalMaxMinValuesOnly){
+                  whichToShow = obtainMinimaeAndMaximae(data[0].values.map(function(datum){ return datum.value; }));
+                }
+
                 bars.select('text')
-                    .text(function(d,i) { return valueFormat(getY(d,i)) })
+                    .text(function(d,i) { 
+                      if (whichToShow[i]){
+                        return valueFormat(getY(d,i));
+                      } else {
+                        return "";
+                      }
+                    })
                     .watchTransition(renderWatch, 'discreteBar: bars text')
                     .attr('x', x.rangeBand() * .9 / 2)
                     .attr('y', function(d,i) { return getY(d,i) < 0 ? y(getY(d,i)) - y(0) + 12 : -4 })
@@ -223,6 +286,7 @@ nv.models.discreteBar = function() {
         height:  {get: function(){return height;}, set: function(_){height=_;}},
         forceY:  {get: function(){return forceY;}, set: function(_){forceY=_;}},
         showValues: {get: function(){return showValues;}, set: function(_){showValues=_;}},
+        showLocalMaxMinValuesOnly: {get: function(){return showLocalMaxMinValuesOnly;}, set: function(_){showLocalMaxMinValuesOnly=_;}},
         x:       {get: function(){return getX;}, set: function(_){getX=_;}},
         y:       {get: function(){return getY;}, set: function(_){getY=_;}},
         xScale:  {get: function(){return x;}, set: function(_){x=_;}},
