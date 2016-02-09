@@ -3008,6 +3008,7 @@ nv.models.discreteBar = function() {
 
               previous = data[i-1]
               current = data[i]
+
               if (current > previous){
                 lastMax = {value: current, index: i}
               } else if (lastMax != undefined){
@@ -3038,8 +3039,41 @@ nv.models.discreteBar = function() {
                 return false; 
               }
             })
-            
+
+            var minimaeForSorting = [];
+
+            for (var ele in minimae ){
+              minimaeForSorting.push([ele, minimae[ele]]);
+            }
+
+            minimaeForSorting = minimaeForSorting.sort(function(a,b){
+              return a[1] - b[1]; 
+            });
+
+            var dontRemoveTheseMinima = minimaeForSorting.slice(0,2);
+            dontRemoveTheseMinima = dontRemoveTheseMinima.map(function(i){
+              return parseInt(i[0])
+            });
+
+            var removeValue;
+
+            for (var i = 0; i < whichToShow.length - 2; i++) {
+
+              removeValue = true;
+
+              if (maximae.hasOwnProperty(i) && minimae.hasOwnProperty(i+1) && maximae.hasOwnProperty(i+2)) {
+
+                dontRemoveTheseMinima.forEach(function(val){ 
+                  if (val == i + 1) removeValue = false;
+                })
+
+                if (removeValue) whichToShow[i+1] = false;
+
+              }
+            }
+
             return whichToShow;
+
         }
         , forceY = [0] // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
         , color = nv.utils.defaultColor()

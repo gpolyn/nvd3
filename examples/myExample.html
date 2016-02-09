@@ -80,9 +80,10 @@
     var down = [8,7,6,5,4,3,2,1];
     var smile = [8,7,6,5,6,7,8,9];
     var frown = [1,2,3,4,5,4,3,2];
+    var upDownUpDown = [5,4,6,3,7,4,5,2];
     var up = down.slice().reverse();
-    var what = frown;
-    <!-- historicalBarChart[0].values.forEach(function(datum, i){ historicalBarChart[0].values[i]["value"] = what[i]; }) -->
+    var what = upDownUpDown;
+    historicalBarChart[0].values.forEach(function(datum, i){ historicalBarChart[0].values[i]["value"] = what[i]; })
 
     nv.addGraph(function() {
         var chart = nv.models.discreteBarChart()
