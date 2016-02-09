@@ -1,6 +1,7 @@
 nv.models.axis = function() {
     "use strict";
 
+
     //============================================================
     // Public Variables with Default Settings
     //------------------------------------------------------------
@@ -134,27 +135,30 @@ nv.models.axis = function() {
                     } else {
                         w = scale.range()[scale.range().length-1]+(scale.range()[1]-scale.range()[0]);
                     }
+                    var start = scale.range()[0];
+                    var fart = scale.rangeBand();
+                    var thouArt = (fart/2 + start);
+                    var tickRowHeight = (xTicks[0][1].getBoundingClientRect())
 
                     // ADD ARBITRARY ADDITIONAL TICK ROWS
                     if (data[0].additionalTickRows && data[0].additionalTickRows.length > 0){
 
                       var additionalTickRows = data[0].additionalTickRows.slice()
                       additionalTickRows.unshift({range: scale0.range()});
-
-                      var question1 = 26; // Q1: What basis for margin for first additional row?
-                      var question2 = 9; // Q2: What basis for distance for additional rows from axis?
+                      var question1 = thouArt - start; // Q1: What basis for margin for first additional row?
 
                       for ( var k = 1; k < additionalTickRows.length; k++ ){
 
                         var previousTickRowRange = additionalTickRows[k-1].range;
-
                         additionalTickRows[k]["range"] = [];
+                        var previousPositions = (previousTickRowRange.map(function(data,i){return data + question1}))
+                        question1 = 0 // this knocks out the initial shift 
 
                         additionalTickRows[k].valuePositionsRelativeToPreviousRow.forEach(function(ele){
                           if (ele.length == 1){
-                            additionalTickRows[k]["range"].push( previousTickRowRange[ele[0]] + question1 ); // Q1: What basis for margin for first additional row?
+                            additionalTickRows[k]["range"].push( previousPositions[ele[0]]); // Q1: What basis for margin for first additional row?
                           } else { // length == 2
-                            additionalTickRows[k]["range"].push( ( previousTickRowRange[ele[1]] - previousTickRowRange[ele[0]] )/2  + previousTickRowRange[ele[0]] );
+                            additionalTickRows[k]["range"].push( (previousPositions[ele[1]] - previousPositions[ele[0]] )/2 + previousPositions[ele[0]]);
                           }
                         })
 
@@ -163,14 +167,15 @@ nv.models.axis = function() {
 
                         var b = d3.svg.axis().scale(a);
 
-                        var c = g.append("g").call(b);
-
-                        c.attr("transform","translate(0," + (k * question2) + ")"); // QUESTION2: Dynamic basis for distance?
+                        var newt = d3.select('.nv-axis .nv-wrap g')
+                        var c = newt.append("g").call(b);
+                        c.attr("class","added-tick-row")
+                        c.selectAll('text')
+                         .attr('y', 14 + ((k-1) * 11))
 
                       }
                     
                     }
-
                     axisLabel
                         .attr('text-anchor', 'middle')
                         .attr('y', xLabelMargin)

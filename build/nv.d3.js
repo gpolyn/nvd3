@@ -1,4 +1,4 @@
-/* nvd3 version 1.7.1(https://github.com/novus/nvd3) 2016-01-15 */
+/* nvd3 version 1.7.1(https://github.com/novus/nvd3) 2016-02-09 */
 (function(){
 
 // set up main nv object on window
@@ -1450,6 +1450,7 @@ nv.utils.initSVG = function(svg) {
 };nv.models.axis = function() {
     "use strict";
 
+
     //============================================================
     // Public Variables with Default Settings
     //------------------------------------------------------------
@@ -1583,27 +1584,30 @@ nv.utils.initSVG = function(svg) {
                     } else {
                         w = scale.range()[scale.range().length-1]+(scale.range()[1]-scale.range()[0]);
                     }
+                    var start = scale.range()[0];
+                    var fart = scale.rangeBand();
+                    var thouArt = (fart/2 + start);
+                    var tickRowHeight = (xTicks[0][1].getBoundingClientRect())
 
                     // ADD ARBITRARY ADDITIONAL TICK ROWS
                     if (data[0].additionalTickRows && data[0].additionalTickRows.length > 0){
 
                       var additionalTickRows = data[0].additionalTickRows.slice()
                       additionalTickRows.unshift({range: scale0.range()});
-
-                      var question1 = 26; // Q1: What basis for margin for first additional row?
-                      var question2 = 9; // Q2: What basis for distance for additional rows from axis?
+                      var question1 = thouArt - start; // Q1: What basis for margin for first additional row?
 
                       for ( var k = 1; k < additionalTickRows.length; k++ ){
 
                         var previousTickRowRange = additionalTickRows[k-1].range;
-
                         additionalTickRows[k]["range"] = [];
+                        var previousPositions = (previousTickRowRange.map(function(data,i){return data + question1}))
+                        question1 = 0 // this knocks out the initial shift 
 
                         additionalTickRows[k].valuePositionsRelativeToPreviousRow.forEach(function(ele){
                           if (ele.length == 1){
-                            additionalTickRows[k]["range"].push( previousTickRowRange[ele[0]] + question1 ); // Q1: What basis for margin for first additional row?
+                            additionalTickRows[k]["range"].push( previousPositions[ele[0]]); // Q1: What basis for margin for first additional row?
                           } else { // length == 2
-                            additionalTickRows[k]["range"].push( ( previousTickRowRange[ele[1]] - previousTickRowRange[ele[0]] )/2  + previousTickRowRange[ele[0]] );
+                            additionalTickRows[k]["range"].push( (previousPositions[ele[1]] - previousPositions[ele[0]] )/2 + previousPositions[ele[0]]);
                           }
                         })
 
@@ -1612,14 +1616,15 @@ nv.utils.initSVG = function(svg) {
 
                         var b = d3.svg.axis().scale(a);
 
-                        var c = g.append("g").call(b);
-
-                        c.attr("transform","translate(0," + (k * question2) + ")"); // QUESTION2: Dynamic basis for distance?
+                        var newt = d3.select('.nv-axis .nv-wrap g')
+                        var c = newt.append("g").call(b);
+                        c.attr("class","added-tick-row")
+                        c.selectAll('text')
+                         .attr('y', 14 + ((k-1) * 11))
 
                       }
                     
                     }
-
                     axisLabel
                         .attr('text-anchor', 'middle')
                         .attr('y', xLabelMargin)
@@ -2988,9 +2993,58 @@ nv.models.discreteBar = function() {
         , y = d3.scale.linear()
         , getX = function(d) { return d.x }
         , getY = function(d) { return d.y }
+        , obtainMinimaeAndMaximae = function(data) {
+            
+            var lastMin, lastMax;
+            var minimae = {}, maximae = {};
+            var previous, current;
+
+            if ( data.length > 0){ // ensure first max is captured
+              lastMax = {value: data[0], index: 0};
+              lastMin = {value: data[0], index: 0};
+            }
+
+            for (var i = 1; i < data.length; i++) {
+
+              previous = data[i-1]
+              current = data[i]
+              if (current > previous){
+                lastMax = {value: current, index: i}
+              } else if (lastMax != undefined){
+                maximae[lastMax["index"]] = lastMax["value"]; // save
+                lastMax = undefined; // reset
+              }
+
+              if (current < previous){
+                lastMin = {value: current, index: i}
+              } else if (lastMin != undefined){
+                minimae[lastMin["index"]] = lastMin["value"]; // save
+                lastMin = undefined; // reset
+              }
+            }
+
+            if (lastMin != undefined){
+                minimae[lastMin["index"]] = lastMin["value"]; // save
+            }
+
+            if (lastMax != undefined){
+                maximae[lastMax["index"]] = lastMax["value"]; // save
+            }
+
+            var whichToShow = data.map(function(val, i){
+              if (maximae.hasOwnProperty(i) || minimae.hasOwnProperty(i)) {
+                return true;
+              } else {
+                return false; 
+              }
+            })
+            
+            return whichToShow;
+        }
         , forceY = [0] // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
         , color = nv.utils.defaultColor()
         , showValues = false
+        , showLocalMaxMinValuesOnly = false
         , valueFormat = d3.format(',.2f')
         , xDomain
         , yDomain
@@ -3004,12 +3058,14 @@ nv.models.discreteBar = function() {
     //============================================================
     // Private Variables
     //------------------------------------------------------------
-
     var x0, y0;
     var renderWatch = nv.utils.renderWatch(dispatch, duration);
 
     function chart(selection) {
         renderWatch.reset();
+
+        if (showLocalMaxMinValuesOnly) showValues = true;
+
         selection.each(function(data) {
             var availableWidth = width - margin.left - margin.right,
                 availableHeight = height - margin.top - margin.bottom,
@@ -3031,7 +3087,6 @@ nv.models.discreteBar = function() {
                         return { x: getX(d,i), y: getY(d,i), y0: d.y0 }
                     })
                 });
-
             x   .domain(xDomain || d3.merge(seriesData).map(function(d) { return d.x }))
                 .rangeBands(xRange || [0, availableWidth], .1);
             y   .domain(yDomain || d3.extent(d3.merge(seriesData).map(function(d) { return d.y }).concat(forceY)));
@@ -3133,12 +3188,25 @@ nv.models.discreteBar = function() {
                 .attr('width', x.rangeBand() * .9 / data.length )
 
             if (showValues) {
+
                 barsEnter.append('text')
                     .attr('text-anchor', 'middle')
                 ;
 
+                var whichToShow = Array.apply(null, Array(data[0].values.length)).map(function(){return true;}); 
+
+                if (showLocalMaxMinValuesOnly){
+                  whichToShow = obtainMinimaeAndMaximae(data[0].values.map(function(datum){ return datum.value; }));
+                }
+
                 bars.select('text')
-                    .text(function(d,i) { return valueFormat(getY(d,i)) })
+                    .text(function(d,i) { 
+                      if (whichToShow[i]){
+                        return valueFormat(getY(d,i));
+                      } else {
+                        return "";
+                      }
+                    })
                     .watchTransition(renderWatch, 'discreteBar: bars text')
                     .attr('x', x.rangeBand() * .9 / 2)
                     .attr('y', function(d,i) { return getY(d,i) < 0 ? y(getY(d,i)) - y(0) + 12 : -4 })
@@ -3197,6 +3265,7 @@ nv.models.discreteBar = function() {
         height:  {get: function(){return height;}, set: function(_){height=_;}},
         forceY:  {get: function(){return forceY;}, set: function(_){forceY=_;}},
         showValues: {get: function(){return showValues;}, set: function(_){showValues=_;}},
+        showLocalMaxMinValuesOnly: {get: function(){return showLocalMaxMinValuesOnly;}, set: function(_){showLocalMaxMinValuesOnly=_;}},
         x:       {get: function(){return getX;}, set: function(_){getX=_;}},
         y:       {get: function(){return getY;}, set: function(_){getY=_;}},
         xScale:  {get: function(){return x;}, set: function(_){x=_;}},
