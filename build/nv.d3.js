@@ -1,4 +1,4 @@
-/* nvd3 version 1.7.1(https://github.com/novus/nvd3) 2016-02-09 */
+/* nvd3 version 1.7.1(https://github.com/novus/nvd3) 2016-02-10 */
 (function(){
 
 // set up main nv object on window
@@ -1592,6 +1592,8 @@ nv.utils.initSVG = function(svg) {
                     // ADD ARBITRARY ADDITIONAL TICK ROWS
                     if (data[0].additionalTickRows && data[0].additionalTickRows.length > 0){
 
+                      d3.selectAll('g.added-tick-row').remove(); // rid us of old
+
                       var additionalTickRows = data[0].additionalTickRows.slice()
                       additionalTickRows.unshift({range: scale0.range()});
                       var question1 = thouArt - start; // Q1: What basis for margin for first additional row?
@@ -1620,7 +1622,8 @@ nv.utils.initSVG = function(svg) {
                         var c = newt.append("g").call(b);
                         c.attr("class","added-tick-row")
                         c.selectAll('text')
-                         .attr('y', 14 + ((k-1) * 11))
+                         // .attr('y', 14 + ((k-1) * 11))
+                         .attr('dy', 14 + ((k-1) * 11))
 
                       }
                     
