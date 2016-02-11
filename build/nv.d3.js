@@ -3063,8 +3063,8 @@ nv.models.discreteBar = function() {
             });
 
             console.log("maximaeForSorting",maximaeForSorting)
-            var dontRemoveTheseMinima = minimaeForSorting.slice(0,3);
-            var dontRemoveTheseMaxima = maximaeForSorting.slice(0,3);
+            var dontRemoveTheseMinima = minimaeForSorting.slice(0,2);
+            var dontRemoveTheseMaxima = maximaeForSorting.slice(0,2);
 
             dontRemoveTheseMinima = dontRemoveTheseMinima.map(function(i){
               return parseInt(i[0])
@@ -3096,7 +3096,7 @@ nv.models.discreteBar = function() {
             }
 
             var interimArray = whichToShow.map(function(bool, i){
-              return bool ? data[i] : -i;
+              return bool ? data[i] : -( i+1 );
             });
 
             console.log("interimArray", interimArray)
