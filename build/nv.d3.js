@@ -1,4 +1,4 @@
-/* nvd3 version 1.7.1(https://github.com/novus/nvd3) 2016-02-10 */
+/* nvd3 version 1.7.1(https://github.com/novus/nvd3) 2016-02-11 */
 (function(){
 
 // set up main nv object on window
@@ -3044,36 +3044,98 @@ nv.models.discreteBar = function() {
             })
 
             var minimaeForSorting = [];
+            var maximaeForSorting = [];
 
             for (var ele in minimae ){
               minimaeForSorting.push([ele, minimae[ele]]);
+            }
+
+            for (var ele in maximae ){
+              maximaeForSorting.push([ele, maximae[ele]]);
             }
 
             minimaeForSorting = minimaeForSorting.sort(function(a,b){
               return a[1] - b[1]; 
             });
 
-            var dontRemoveTheseMinima = minimaeForSorting.slice(0,2);
+            maximaeForSorting = maximaeForSorting.sort(function(a,b){
+              return b[1] - a[1]; 
+            });
+
+            console.log("maximaeForSorting",maximaeForSorting)
+            var dontRemoveTheseMinima = minimaeForSorting.slice(0,3);
+            var dontRemoveTheseMaxima = maximaeForSorting.slice(0,3);
+
             dontRemoveTheseMinima = dontRemoveTheseMinima.map(function(i){
               return parseInt(i[0])
             });
+            dontRemoveTheseMaxima = dontRemoveTheseMaxima.map(function(i){
+              return parseInt(i[0])
+            });
+
+            console.log("dontRemoveTheseMaxima", dontRemoveTheseMaxima)
+            console.log("dontRemoveTheseMinima", dontRemoveTheseMinima)
+            console.log("dontRemoveTheseMinima", dontRemoveTheseMinima)
 
             var removeValue;
 
-            for (var i = 0; i < whichToShow.length - 2; i++) {
-
-              removeValue = true;
-
-              if (maximae.hasOwnProperty(i) && minimae.hasOwnProperty(i+1) && maximae.hasOwnProperty(i+2)) {
-
-                dontRemoveTheseMinima.forEach(function(val){ 
-                  if (val == i + 1) removeValue = false;
-                })
-
-                if (removeValue) whichToShow[i+1] = false;
-
+            whichToShow = Array.apply(null, new Array(data.length)).map(function(){return false})
+            console.log("whichToShow", whichToShow)
+            for (var i = 0; i < whichToShow.length; i++) {
+              console.log(i)
+              // if (dontRemoveTheseMinima.hasOwnProperty(i) || dontRemoveTheseMaxima.hasOwnProperty(i)){
+              if (dontRemoveTheseMinima.indexOf(i) >= 0 ){
+                // console.log(i)
+                whichToShow[i] = true;
               }
+              if (dontRemoveTheseMaxima.indexOf(i) >= 0){
+                // console.log(i)
+                whichToShow[i] = true;
+              }
+
             }
+
+            var interimArray = whichToShow.map(function(bool, i){
+              return bool ? data[i] : -i;
+            });
+
+            console.log("interimArray", interimArray)
+
+						var seen = {};
+						interimArray = interimArray.map(function(item) {
+
+							if (seen.hasOwnProperty(item)){
+								return -1;								
+							} else {
+								seen[item] = true;	
+								return item;								
+							}
+	
+						});
+
+						interimArray.forEach(function(ele,i){
+							// console.log(ele)
+							( ele > -1 ) ? whichToShow[i] = true : whichToShow[i] = false;
+						})
+
+            console.log("interimArray", interimArray)
+            console.log("whichToShow", whichToShow)
+
+            // THIS REMOVES MINIMAE STUCK BETWEEN TWO MAXIMAE
+            // for (var i = 0; i < whichToShow.length - 2; i++) {
+
+            //   removeValue = true;
+
+            //   if (maximae.hasOwnProperty(i) && minimae.hasOwnProperty(i+1) && maximae.hasOwnProperty(i+2)) {
+
+            //     dontRemoveTheseMinima.forEach(function(val){ 
+            //       if (val == i + 1) removeValue = false;
+            //     })
+
+            //     if (removeValue) whichToShow[i+1] = false;
+
+            //   }
+            // }
 
             return whichToShow;
 
